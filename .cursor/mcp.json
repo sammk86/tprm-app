@@ -1,0 +1,26 @@
+{
+    "mcpServers": {
+        "Context7": {
+      "command": "bash",
+      "args": ["-c", "npx -y @upstash/context7-mcp --api-key \"$CONTEXT7_API_KEY\""],
+      "env": {
+        "CONTEXT7_API_KEY": "ctx7sk-d5bb347d-9a31-4935-844e-671641761314",
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
+        "time": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-time",
+                "--local-timezone=America/New_York"
+            ],
+            "env": {
+                "FASTMCP_LOG_LEVEL": "ERROR"
+            },
+            "disabled": false,
+            "autoApprove": []
+        }
+    }
+}
