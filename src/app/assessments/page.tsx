@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 export const dynamic = 'force-dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { MainLayout } from '@/components/layout/main-layout'
 import { AssessmentList } from '@/components/assessments/assessment-list'
 import { AssessmentForm } from '@/components/assessments/assessment-form'
 import { Loader2 } from 'lucide-react'
@@ -61,73 +62,43 @@ export default function AssessmentsPage() {
     // Fetch data
     const fetchData = async () => {
       try {
-        // In a real app, these would be API calls
-        // For now, we'll use mock data
-        setAssessments([
-          {
-            id: '1',
-            vendorName: 'Acme Corp',
-            templateName: 'General Risk Assessment',
-            status: 'IN_PROGRESS',
-            dueDate: '2025-09-20',
-            assignedTo: 'John Smith',
-            riskScore: 45,
-            createdAt: '2025-09-13',
-            updatedAt: '2025-09-13',
-          },
-          {
-            id: '2',
-            vendorName: 'Tech Solutions Inc',
-            templateName: 'Cybersecurity Assessment',
-            status: 'COMPLETED',
-            dueDate: '2025-09-15',
-            assignedTo: 'Jane Doe',
-            riskScore: 25,
-            createdAt: '2025-09-10',
-            updatedAt: '2025-09-15',
-          },
-          {
-            id: '3',
-            vendorName: 'Global Services Ltd',
-            templateName: 'Financial Assessment',
-            status: 'REVIEWED',
-            dueDate: '2025-09-18',
-            assignedTo: 'Mike Johnson',
-            riskScore: 75,
-            createdAt: '2025-09-12',
-            updatedAt: '2025-09-18',
-          },
-          {
-            id: '4',
-            vendorName: 'Data Systems Co',
-            templateName: 'General Risk Assessment',
-            status: 'DRAFT',
-            dueDate: '2025-09-25',
-            assignedTo: 'Sarah Wilson',
-            createdAt: '2025-09-13',
-            updatedAt: '2025-09-13',
-          },
-        ])
+        // Fetch assessments from API
+        const assessmentsResponse = await fetch('/api/assessments')
+        const assessmentsData = await assessmentsResponse.json()
+        
+        if (assessmentsData.success) {
+          const formattedAssessments = assessmentsData.assessments.map((assessment: any) => ({
+            id: assessment.id,
+            vendorName: assessment.vendor?.name || 'Unknown Vendor',
+            templateName: assessment.template?.name || 'Unknown Template',
+            status: assessment.status,
+            dueDate: assessment.dueDate ? assessment.dueDate.split('T')[0] : '',
+            assignedTo: assessment.assignedTo ? `${assessment.assignedTo.firstName} ${assessment.assignedTo.lastName}` : 'Unassigned',
+            riskScore: assessment.riskScore,
+            createdAt: assessment.createdAt.split('T')[0],
+            updatedAt: assessment.updatedAt.split('T')[0],
+          }))
+          setAssessments(formattedAssessments)
+        }
 
-        setVendors([
-          { id: '1', name: 'Acme Corp' },
-          { id: '2', name: 'Tech Solutions Inc' },
-          { id: '3', name: 'Global Services Ltd' },
-          { id: '4', name: 'Data Systems Co' },
-        ])
+        // Fetch vendors from API
+        const vendorsResponse = await fetch('/api/vendors')
+        const vendorsData = await vendorsResponse.json()
+        
+        if (vendorsData.success) {
+          setVendors(vendorsData.vendors)
+        }
 
-        setTemplates([
-          { id: '1', name: 'General Risk Assessment', category: 'GENERAL' },
-          { id: '2', name: 'Cybersecurity Assessment', category: 'CYBERSECURITY' },
-          { id: '3', name: 'Financial Assessment', category: 'FINANCIAL' },
-        ])
+        // Fetch templates from API
+        const templatesResponse = await fetch('/api/assessment-templates')
+        const templatesData = await templatesResponse.json()
+        
+        if (templatesData.success) {
+          setTemplates(templatesData.templates)
+        }
 
-        setUsers([
-          { id: '1', firstName: 'John', lastName: 'Smith', email: 'john@example.com' },
-          { id: '2', firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com' },
-          { id: '3', firstName: 'Mike', lastName: 'Johnson', email: 'mike@example.com' },
-          { id: '4', firstName: 'Sarah', lastName: 'Wilson', email: 'sarah@example.com' },
-        ])
+        // TODO: Fetch users from API when users endpoint is available
+        setUsers([])
       } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
@@ -207,25 +178,34 @@ export default function AssessmentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <AssessmentList
-        assessments={assessments}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
-        onCreate={handleCreate}
-        isLoading={loading}
-      />
+    <MainLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Assessments</h1>
+          <p className="text-muted-foreground">
+            Manage vendor risk assessments and track their progress.
+          </p>
+        </div>
 
-      <AssessmentForm
-        assessment={editingAssessment}
-        vendors={vendors}
-        templates={templates}
-        users={users}
-        onSubmit={handleFormSubmit}
-        onCancel={handleFormCancel}
-        isOpen={showForm}
-      />
-    </div>
+        <AssessmentList
+          assessments={assessments}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onView={handleView}
+          onCreate={handleCreate}
+          isLoading={loading}
+        />
+
+        <AssessmentForm
+          assessment={editingAssessment}
+          vendors={vendors}
+          templates={templates}
+          users={users}
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          isOpen={showForm}
+        />
+      </div>
+    </MainLayout>
   )
 }
