@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Providers } from '@/components/providers/session-provider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'TPRM App - Third-Party Risk Management',
-  description: 'Comprehensive third-party risk management platform for SMBs',
+  title: 'TPRM App - Third-Party Risk Management Platform',
+  description: 'Streamline your vendor risk assessment process with our comprehensive platform. Identify, assess, and mitigate risks before they impact your business.',
 }
 
 export default function RootLayout({
@@ -16,7 +17,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   )
 }

@@ -8,6 +8,14 @@ const nextConfig = {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
   },
+  output: 'standalone',
+  trailingSlash: false,
+  generateEtags: false,
+  poweredByHeader: false,
+  compress: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
 }
 
 module.exports = nextConfig

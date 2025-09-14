@@ -77,164 +77,27 @@ async function main() {
   console.log('✅ Procurement manager created:', procurementUser.email)
 
   // Create default assessment templates
-  const generalTemplate = await prisma.assessmentTemplate.upsert({
-    where: { id: 'template-general' },
-    update: {},
-    create: {
-      id: 'template-general',
-      name: 'General Vendor Risk Assessment',
-      description: 'Comprehensive risk assessment covering all major risk categories',
-      category: 'GENERAL',
-      questions: {
-        sections: [
-          {
-            title: 'Company Information',
-            questions: [
-              {
-                id: 'q1',
-                text: 'How long has your company been in business?',
-                type: 'select',
-                options: ['Less than 1 year', '1-3 years', '3-5 years', '5-10 years', 'More than 10 years'],
-                required: true,
-              },
-              {
-                id: 'q2',
-                text: 'What is your company size (number of employees)?',
-                type: 'select',
-                options: ['1-10', '11-50', '51-200', '201-1000', 'More than 1000'],
-                required: true,
-              },
-            ],
-          },
-          {
-            title: 'Financial Stability',
-            questions: [
-              {
-                id: 'q3',
-                text: 'Do you have adequate financial resources to fulfill this contract?',
-                type: 'yesno',
-                required: true,
-              },
-              {
-                id: 'q4',
-                text: 'Have you filed for bankruptcy in the past 5 years?',
-                type: 'yesno',
-                required: true,
-              },
-            ],
-          },
-          {
-            title: 'Security and Compliance',
-            questions: [
-              {
-                id: 'q5',
-                text: 'Do you have a formal information security program?',
-                type: 'yesno',
-                required: true,
-              },
-              {
-                id: 'q6',
-                text: 'Are you certified to any security standards?',
-                type: 'multiselect',
-                options: ['ISO 27001', 'SOC 2', 'PCI DSS', 'HIPAA', 'None'],
-                required: false,
-              },
-            ],
-          },
-        ],
-      },
-      riskWeights: {
-        sections: {
-          'Company Information': 0.2,
-          'Financial Stability': 0.3,
-          'Security and Compliance': 0.5,
-        },
-        questions: {
-          q1: 0.1,
-          q2: 0.1,
-          q3: 0.2,
-          q4: 0.1,
-          q5: 0.3,
-          q6: 0.2,
-        },
-      },
-      createdById: adminUser.id,
-    },
-  })
+  const { defaultTemplates } = await import('../src/lib/assessment-templates')
 
-  console.log('✅ General assessment template created')
-
-  const cybersecurityTemplate = await prisma.assessmentTemplate.upsert({
-    where: { id: 'template-cybersecurity' },
-    update: {},
-    create: {
-      id: 'template-cybersecurity',
-      name: 'Cybersecurity Assessment',
-      description: 'Focused assessment on cybersecurity controls and practices',
-      category: 'CYBERSECURITY',
-      questions: {
-        sections: [
-          {
-            title: 'Security Controls',
-            questions: [
-              {
-                id: 'q1',
-                text: 'Do you have multi-factor authentication enabled for all systems?',
-                type: 'yesno',
-                required: true,
-              },
-              {
-                id: 'q2',
-                text: 'Do you conduct regular security awareness training?',
-                type: 'yesno',
-                required: true,
-              },
-              {
-                id: 'q3',
-                text: 'Do you have an incident response plan?',
-                type: 'yesno',
-                required: true,
-              },
-            ],
-          },
-          {
-            title: 'Data Protection',
-            questions: [
-              {
-                id: 'q4',
-                text: 'How do you encrypt data at rest?',
-                type: 'select',
-                options: ['AES-256', 'AES-128', 'Other encryption', 'No encryption'],
-                required: true,
-              },
-              {
-                id: 'q5',
-                text: 'Do you have data backup and recovery procedures?',
-                type: 'yesno',
-                required: true,
-              },
-            ],
-          },
-        ],
+  for (const templateData of defaultTemplates) {
+    const templateId = `template-${templateData.name.toLowerCase().replace(/\s+/g, '-')}`
+    
+    await prisma.assessmentTemplate.upsert({
+      where: { id: templateId },
+      update: {},
+      create: {
+        id: templateId,
+        name: templateData.name,
+        description: templateData.description,
+        category: templateData.category,
+        questions: templateData.questions,
+        riskWeights: templateData.riskWeights,
+        createdById: adminUser.id,
       },
-      riskWeights: {
-        sections: {
-          'Security Controls': 0.6,
-          'Data Protection': 0.4,
-        },
-        questions: {
-          q1: 0.2,
-          q2: 0.2,
-          q3: 0.2,
-          q4: 0.2,
-          q5: 0.2,
-        },
-      },
-      createdById: adminUser.id,
-    },
-  })
+    })
+  }
 
-  console.log('✅ Cybersecurity assessment template created')
+  console.log('✅ Default assessment templates created')
 
   // Create sample vendors
   const vendor1 = await prisma.vendor.upsert({
@@ -282,21 +145,27 @@ async function main() {
   console.log('✅ Sample vendors created')
 
   // Create sample assessment
-  const assessment = await prisma.assessment.upsert({
-    where: { id: 'assessment-1' },
-    update: {},
-    create: {
-      id: 'assessment-1',
-      vendorId: vendor1.id,
-      templateId: generalTemplate.id,
-      status: 'IN_PROGRESS',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      assignedToId: complianceUser.id,
-      createdById: adminUser.id,
-    },
+  const generalTemplate = await prisma.assessmentTemplate.findFirst({
+    where: { name: 'General Vendor Risk Assessment' },
   })
 
-  console.log('✅ Sample assessment created')
+  if (generalTemplate) {
+    const assessment = await prisma.assessment.upsert({
+      where: { id: 'assessment-1' },
+      update: {},
+      create: {
+        id: 'assessment-1',
+        vendorId: vendor1.id,
+        templateId: generalTemplate.id,
+        status: 'IN_PROGRESS',
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        assignedToId: complianceUser.id,
+        createdById: adminUser.id,
+      },
+    })
+
+    console.log('✅ Sample assessment created')
+  }
 
   console.log('🎉 Database seeding completed successfully!')
 }
