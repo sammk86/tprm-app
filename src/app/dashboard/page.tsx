@@ -10,6 +10,7 @@ import { AssessmentTimeline } from '@/components/dashboard/assessment-timeline'
 import { VendorStatusChart } from '@/components/dashboard/vendor-status-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
+import { VendorWithRelations, AssessmentWithRelations } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,78 +90,81 @@ export default function DashboardPage() {
     // Fetch dashboard data
     const fetchDashboardData = async () => {
       try {
-        // In a real app, these would be API calls
-        // For now, we'll use mock data
+        // Fetch vendors data
+        const vendorsResponse = await fetch('/api/vendors')
+        const vendorsData = await vendorsResponse.json()
+        const vendors = vendorsData.success ? vendorsData.vendors : []
+
+        // Fetch assessments data
+        const assessmentsResponse = await fetch('/api/assessments')
+        const assessmentsData = await assessmentsResponse.json()
+        const assessments = assessmentsData.success ? assessmentsData.assessments : []
+
+        // Calculate stats from real data
+        const totalVendors = vendors.length
+        const activeAssessments = assessments.filter((a: AssessmentWithRelations) => a.status === 'IN_PROGRESS').length
+        const completedAssessments = assessments.filter((a: AssessmentWithRelations) => a.status === 'COMPLETED' || a.status === 'APPROVED').length
+        const pendingReviews = assessments.filter((a: AssessmentWithRelations) => a.status === 'REVIEWED').length
+        const highRiskVendors = vendors.filter((v: VendorWithRelations) => v.riskLevel === 'HIGH' || v.riskLevel === 'CRITICAL').length
+
         setStats({
-          totalVendors: 156,
-          activeAssessments: 23,
-          highRiskVendors: 8,
-          completedAssessments: 89,
-          pendingReviews: 12,
-          totalUsers: 45,
-          securityIncidents: 2,
-          avgResponseTime: 3.2,
+          totalVendors,
+          activeAssessments,
+          highRiskVendors,
+          completedAssessments,
+          pendingReviews,
+          totalUsers: 0, // TODO: Implement users API
+          securityIncidents: 0, // TODO: Implement incidents tracking
+          avgResponseTime: 0, // TODO: Implement response time tracking
         })
 
-        setRiskDistribution({
-          low: 45,
-          medium: 32,
-          high: 18,
-          critical: 5,
-        })
+        // Calculate risk distribution from vendors
+        const riskCounts = vendors.reduce((acc: { low: number; medium: number; high: number; critical: number }, vendor: VendorWithRelations) => {
+          const riskLevel = vendor.riskLevel || 'LOW'
+          switch (riskLevel) {
+            case 'CRITICAL': acc.critical++; break
+            case 'HIGH': acc.high++; break
+            case 'MEDIUM': acc.medium++; break
+            case 'LOW': acc.low++; break
+            default: acc.low++; break
+          }
+          return acc
+        }, { low: 0, medium: 0, high: 0, critical: 0 })
 
-        setVendorStatus({
-          active: 120,
-          inactive: 15,
-          pending: 18,
-          suspended: 3,
-        })
+        setRiskDistribution(riskCounts)
 
-        setRecentAssessments([
-          {
-            id: '1',
-            vendorName: 'Acme Corp',
-            templateName: 'General Risk Assessment',
-            status: 'IN_PROGRESS',
-            dueDate: '2025-09-20',
-            assignedTo: 'John Smith',
-            riskScore: 45,
-            createdAt: '2025-09-13',
-            updatedAt: '2025-09-13',
-          },
-          {
-            id: '2',
-            vendorName: 'Tech Solutions Inc',
-            templateName: 'Cybersecurity Assessment',
-            status: 'COMPLETED',
-            dueDate: '2025-09-15',
-            assignedTo: 'Jane Doe',
-            riskScore: 25,
-            createdAt: '2025-09-10',
-            updatedAt: '2025-09-15',
-          },
-          {
-            id: '3',
-            vendorName: 'Global Services Ltd',
-            templateName: 'Financial Assessment',
-            status: 'REVIEWED',
-            dueDate: '2025-09-18',
-            assignedTo: 'Mike Johnson',
-            riskScore: 75,
-            createdAt: '2025-09-12',
-            updatedAt: '2025-09-18',
-          },
-          {
-            id: '4',
-            vendorName: 'Data Systems Co',
-            templateName: 'General Risk Assessment',
-            status: 'DRAFT',
-            dueDate: '2025-09-25',
-            assignedTo: 'Sarah Wilson',
-            createdAt: '2025-09-13',
-            updatedAt: '2025-09-13',
-          },
-        ])
+        // Calculate vendor status distribution
+        const statusCounts = vendors.reduce((acc: { active: number; inactive: number; pending: number; suspended: number }, vendor: VendorWithRelations) => {
+          const status = vendor.status || 'ACTIVE'
+          switch (status) {
+            case 'ACTIVE': acc.active++; break
+            case 'INACTIVE': acc.inactive++; break
+            case 'UNDER_REVIEW': acc.pending++; break
+            case 'TERMINATED': acc.suspended++; break
+            default: acc.active++; break
+          }
+          return acc
+        }, { active: 0, inactive: 0, pending: 0, suspended: 0 })
+
+        setVendorStatus(statusCounts)
+
+        // Set recent assessments (limit to 4 most recent)
+        const recentAssessments = assessments
+          .sort((a: AssessmentWithRelations, b: AssessmentWithRelations) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+          .slice(0, 4)
+          .map((assessment: AssessmentWithRelations) => ({
+            id: assessment.id,
+            vendorName: assessment.vendor?.name || 'Unknown Vendor',
+            templateName: assessment.template?.name || 'Unknown Template',
+            status: assessment.status,
+            dueDate: assessment.dueDate || '',
+            assignedTo: assessment.assignedTo ? `${assessment.assignedTo.firstName} ${assessment.assignedTo.lastName}` : 'Unassigned',
+            riskScore: assessment.riskScore,
+            createdAt: assessment.createdAt.toString().split('T')[0],
+            updatedAt: assessment.updatedAt.toString().split('T')[0],
+          }))
+
+        setRecentAssessments(recentAssessments)
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {
