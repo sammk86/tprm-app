@@ -49,6 +49,12 @@ const navigation = [
     badge: '5',
   },
   {
+    name: 'Templates',
+    href: '/templates',
+    icon: FileText,
+    current: false,
+  },
+  {
     name: 'Risk Analysis',
     href: '/risk-analysis',
     icon: BarChart3,
@@ -96,7 +102,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        'fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0',
+        'fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:fixed lg:inset-y-0',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         <div className="flex h-full flex-col">

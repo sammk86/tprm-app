@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Vendor, CreateVendorData } from '@/types'
 import VendorList from '@/components/vendors/VendorList'
 import VendorForm from '@/components/vendors/VendorForm'
+import { MainLayout } from '@/components/layout/main-layout'
 import { Dialog } from '@headlessui/react'
 
 export default function VendorsPage() {
@@ -148,8 +149,15 @@ export default function VendorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <MainLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Vendors</h1>
+          <p className="text-muted-foreground">
+            Manage your third-party vendors and their risk assessments.
+          </p>
+        </div>
+
         <VendorList
           vendors={vendors}
           onEdit={handleEditVendor}
@@ -180,6 +188,6 @@ export default function VendorsPage() {
           </div>
         </Dialog>
       </div>
-    </div>
+    </MainLayout>
   )
 }

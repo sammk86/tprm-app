@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -22,14 +22,35 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const [isDarkMode, setIsDarkMode] = useState(false)
 
+  // Initialize theme from localStorage or system preference
+  useEffect(() => {
+    const stored = localStorage.getItem('theme')
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const shouldBeDark = stored === 'dark' || (!stored && prefersDark)
+    
+    setIsDarkMode(shouldBeDark)
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [])
+
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode)
-    // In a real app, this would toggle the theme
-    document.documentElement.classList.toggle('dark')
+    const newDarkMode = !isDarkMode
+    setIsDarkMode(newDarkMode)
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
   }
 
   return (
-    <header className="h-16 bg-background border-b border-border flex items-center justify-between px-4 lg:px-6">
+    <header className="h-16 bg-background border-b border-border flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
       {/* Left side */}
       <div className="flex items-center space-x-4">
         <Button

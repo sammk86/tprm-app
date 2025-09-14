@@ -19,10 +19,11 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
       
-      <div className="lg:pl-64">
+      {/* Main content area with proper sidebar spacing */}
+      <div className="transition-all duration-200 ease-in-out lg:ml-64">
         <Header onMenuClick={toggleSidebar} />
         
-        <main className="p-4 lg:p-6">
+        <main className="p-4 lg:p-6 min-h-[calc(100vh-4rem)]">
           {children}
         </main>
       </div>
