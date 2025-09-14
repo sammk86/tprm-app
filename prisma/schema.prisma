@@ -1,0 +1,188 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  COMPLIANCE_OFFICER
+  PROCUREMENT_MANAGER
+}
+
+enum CompanySize {
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+enum VendorType {
+  GENERAL
+  TECHNOLOGY
+  FINANCIAL
+  HEALTHCARE
+  LEGAL
+  CONSULTING
+  OTHER
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BusinessCriticality {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  UNDER_REVIEW
+  TERMINATED
+}
+
+enum AssessmentCategory {
+  GENERAL
+  CYBERSECURITY
+  FINANCIAL
+  OPERATIONAL
+  COMPLIANCE
+  REPUTATIONAL
+}
+
+enum AssessmentStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+// Models
+model Company {
+  id        String      @id @default(cuid())
+  name      String
+  domain    String?
+  industry  String?
+  size      CompanySize?
+  address   String?
+  phone     String?
+  website   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  users     User[]
+  vendors   Vendor[]
+
+  @@map("companies")
+}
+
+model User {
+  id                        String    @id @default(cuid())
+  email                     String    @unique
+  password                  String
+  firstName                 String
+  lastName                  String
+  role                      UserRole  @default(COMPLIANCE_OFFICER)
+  isEmailVerified           Boolean   @default(false)
+  emailVerificationToken    String?
+  emailVerificationExpires  DateTime?
+  passwordResetToken        String?
+  passwordResetExpires      DateTime?
+  companyId                 String
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  // Relations
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdVendors    Vendor[]
+  createdAssessments Assessment[]      @relation("AssessmentCreatedBy")
+  assignedAssessments Assessment[]     @relation("AssessmentAssignedTo")
+  createdTemplates  AssessmentTemplate[]
+
+  @@map("users")
+}
+
+model Vendor {
+  id                String              @id @default(cuid())
+  name              String
+  contactEmail      String?
+  contactPhone      String?
+  website           String?
+  address           String?
+  description       String?
+  services          String[]
+  vendorType        VendorType          @default(GENERAL)
+  riskLevel         RiskLevel           @default(MEDIUM)
+  businessCriticality BusinessCriticality @default(MEDIUM)
+  status            VendorStatus        @default(ACTIVE)
+  companyId         String
+  createdById       String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  // Relations
+  company           Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy         User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  assessments       Assessment[]
+
+  @@map("vendors")
+}
+
+model AssessmentTemplate {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  category    AssessmentCategory
+  questions   Json
+  riskWeights Json
+  isActive    Boolean             @default(true)
+  createdById String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  assessments Assessment[]
+
+  @@map("assessment_templates")
+}
+
+model Assessment {
+  id            String            @id @default(cuid())
+  vendorId      String
+  templateId    String
+  status        AssessmentStatus  @default(DRAFT)
+  responses     Json?
+  riskScore     Int?
+  completedAt   DateTime?
+  dueDate       DateTime?
+  assignedToId  String?
+  createdById   String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  vendor        Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  template      AssessmentTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  assignedTo    User?             @relation("AssessmentAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy     User              @relation("AssessmentCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@map("assessments")
+}
